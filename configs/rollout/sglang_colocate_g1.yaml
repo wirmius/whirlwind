@@ -1,0 +1,21 @@
+# Rollout config — SGLang COLOCATE, SINGLE GPU (tp1/dp1), full-FT.
+# Single-GPU colocate: the engine and the FSDP2 trainer share one GPU, engine
+# memory capped at 40%. Same sampling and lengths as sglang_colocate_tp2.yaml.
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 1
+dp_size: 1
+context_length: 4096
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+generation_kwargs: {}
+mem_fraction_static: 0.4
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+enable_memory_saver: true
+disable_cuda_graph: true
+enable_weights_cpu_backup: true
+node_id: "rollout"

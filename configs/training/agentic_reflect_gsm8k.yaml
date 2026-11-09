@@ -1,0 +1,40 @@
+# EXPERIMENTAL — agentic (multi-turn) GRPO on reflect-and-retry GSM8K.
+# Launch with TASK=reflect examples/experimental_agentic.sh; see
+# docs/agentic_multiturn.md.
+#
+# whirlwind.training.sim_reflect_agent plays the external agent: 4 episodes
+# per problem, up to 3 turns each (a wrong answer earns a "reflect and try
+# again" turn), reward 1 for a correct final answer. The agentic loop regroups
+# turns into episodes by their ww_tag, z-scores episode returns within each
+# problem's group and trains every turn with its episode's advantage.
+# Validation is the usual single-turn GSM8K test accuracy.
+rollout_yaml: "$WHIRLWIND_ROLLOUT_CONFIG:../rollout/agentic_engine.yaml"
+reward_yaml: "$WHIRLWIND_REWARD_CONFIG:../reward/function.yaml"
+model_yaml: "$WHIRLWIND_MODEL_CONFIG:../model/fsdp2_async_lora_1gpu.yaml"
+
+workdir: runs/agentic_reflect_gsm8k
+hot_checkpoint_every_n_steps: 0
+cold_checkpoint_steps: []
+rollout_log_table_every_n_steps: -1
+reward_log_table_every_n_steps: -1
+validation_every_n_steps: 20
+validation_at_step_0: true
+total_steps: "$WW_ASYNC_TOTAL_STEPS:40"   # STEPS in the example script
+rollout_per_prompt: 4        # the agent's group size (episodes per problem)
+log_every_n_steps: 1
+memory_management_enabled: false
+seed: 42
+orchestrator_node_id: "orchestrator"
+
+# --- async knobs (batch sizes count turns, not episodes) ---
+min_train_batch: 256
+max_train_batch: 320
+max_weight_version_lag: 8
+adapter_sync_every_k_steps: 1
+pop_poll_interval_s: 2.0
+step_timeout_s: 300.0
+
+# --- agentic knobs ---
+group_episodes: true              # regroup turns into episodes by ww_tag
+group_complete_timeout_s: 900.0   # drop groups whose episodes never all arrive
+engine_sleep_during_update: false # dedicated engine GPU: always-on serving

@@ -1,0 +1,33 @@
+# Rollout config — vLLM engine settings
+# Drop-in alternative to configs/rollout/sglang.yaml (same RolloutConfig schema).
+# Launch with: --rollout-config configs/rollout/vllm.yaml --rollout-module whirlwind.rollout.rollout_vllm
+model_path: "Qwen/Qwen3-0.6B"
+load_format: "auto"
+tp_size: 1
+dp_size: 1 # vLLM: data_parallel_size>1 requires the multi-process DP launcher
+          # (SGLang runs dp_size workers in one process; vLLM cannot). Use
+          # tp_size for multi-GPU rollout. The rollout_vllm module warns and
+          # downgrades dp_size>1 to 1 rather than crashing.
+context_length: 4096 # -> vLLM max_model_len (total sequence window)
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1 # -1 = disabled (vLLM: 0 = disabled)
+repetition_penalty: 1.0
+
+# Extra generation params (forwarded to vLLM SamplingParams, filtered to valid
+# field names). e.g. min_p, spaces_between_special_tokens, stop_token_ids.
+generation_kwargs: {}
+
+# vLLM gpu_memory_utilization (KV cache + activations fraction). Maps from
+# SGLang's mem_fraction_static. 0.5 leaves headroom for the co-located FSDP
+# model node on the same GPU (match the sglang.yaml setting for an A/B test).
+mem_fraction_static: 0.5
+chunked_prefill_size: 128 # SGLang-only; ignored by vLLM (kept for schema compat)
+schedule_policy: "lpm" # SGLang-only; ignored by vLLM (kept for schema compat)
+# vLLM enable_sleep_mode (== SGLang memory_saver): enables sleep()/wake_up()
+# for the co-located sleep/wake cycle. Keep in sync with the training config's
+# memory_management_enabled — with it off, leave both false.
+enable_memory_saver: false
+enable_weights_cpu_backup: false # SGLang-only; ignored by vLLM
+node_id: "rollout"

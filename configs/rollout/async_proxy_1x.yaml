@@ -1,0 +1,17 @@
+# EXPERIMENTAL — async rollout proxy, the orchestrator-facing rollout endpoint.
+# Fronts ONE SGLang backend engine (async_proxy_engine.yaml, node_id
+# "rollout-engine") and adds the external serving API (generate_external),
+# the reward channel (report_reward), the replay-buffer pull
+# (pop_ready_batch), and the weight_version counter bumped on every
+# update_weights (LoRA adapter hot-swap on the backend).
+# See docs/async_proxy_rollout.md + whirlwind/rollout/rollout_proxy.py.
+node_id: "rollout"
+backend: "rollout-engine"
+# Replay buffer
+buffer_max_entries: 4096    # samples; overflow drops the oldest GROUPS
+reward_ttl_s: 300.0         # pending-reward TTL; expiry discards the group
+max_weight_version_lag: 3   # fallback K (the updater sends its own per pop)
+# Serving
+n_rpc_workers: 2            # concurrent RPC workers (external gens don't queue
+                            # behind validation gens)
+log_internal_generate: false  # validation rollouts never enter the buffer

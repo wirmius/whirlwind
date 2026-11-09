@@ -1,0 +1,39 @@
+# Dataloader node config
+# Manages named datasets for the dataloader node.
+
+# Misc
+node_id: "dataloader"
+
+# Default dataset name when no dataset_name is specified in requests
+default_dataset: "train"
+
+# System prompt with few-shot examples (sampled from the default train dataset)
+few_shot_count: 4
+system_prompt_template: |
+  Solve the following math problems. Always end your answer with "#### {{answer}}" where {{answer}} is the final numerical result.
+
+  {few_shot_examples}
+
+# Named datasets (statically defined)
+datasets:
+  train:
+    name: "openai/gsm8k"
+    dataset_config: "main"
+    split: "train"
+    prompt_key: "question"
+    response_key: "answer"
+    batch_size: 128 # 128 prompts x rollout_per_prompt(4) = 512 completions/step = 128 groups of 4.
+    max_samples: 4096 # match TRL MAX_SAMPLES=4096 (also makes few-shot pool = 4096, matching TRL)
+    seed: 42
+    shuffle: true # shuffle training data each epoch
+
+  val:
+    name: "openai/gsm8k"
+    dataset_config: "main"
+    split: "test"
+    prompt_key: "question"
+    response_key: "answer"
+    batch_size: 256
+    max_samples: 256
+    seed: 42
+    shuffle: false # eval set: deterministic order for reproducible val reward

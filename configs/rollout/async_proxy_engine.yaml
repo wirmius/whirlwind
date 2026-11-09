@@ -1,0 +1,34 @@
+# EXPERIMENTAL — SGLang rollout BACKEND for the async proxy — single-GPU, always-on, LoRA.
+# node_id "rollout-engine": the async proxy (async_proxy_1x.yaml) fronts this
+# engine; the orchestrator only ever sees the proxy ("rollout").
+#
+# Non-colocate by design (docs/async_proxy_rollout.md): the engine
+# owns its GPU outright and NEVER sleeps — so no memory-saver flags and no
+# cuda-graph workaround (those exist only for FSDP co-residence; leaving
+# enable_memory_saver on without sleep/wake strands the KV pool in a custom
+# CUDA MemPool SGLang's weight-update path can't reach, sglang#10025).
+#
+# dp_size=1 passes SGLang's load_lora_adapter assert — the adapter hot-swap
+# (~9 MB) is the async design's weight-sync primitive.
+node_id: "rollout-engine"
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 1
+dp_size: 1
+context_length: 4096
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+generation_kwargs: {}
+# Alone on its GPU (no FSDP co-residence) — can use most of it.
+mem_fraction_static: 0.85
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+enable_memory_saver: false
+enable_weights_cpu_backup: false
+disable_cuda_graph: false
+enable_lora: true
+lora_max_rank: 16
+lora_target_modules: ["q_proj", "v_proj"]

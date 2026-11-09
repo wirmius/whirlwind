@@ -1,0 +1,39 @@
+# EXPERIMENTAL — SGLang engine behind the agent proxy, for tool-calling agents,
+# sharing ONE GPU with the LoRA updater (configs/training/agentic_os_tools_shared.yaml).
+# The engine is drained and put to sleep for every optimizer step, so it must
+# release real VRAM (memory saver) and keep its weights through sleep (CPU
+# backup); CUDA graphs are off because their replay crashes with FSDP2 on the
+# same GPU (TIPS_AND_TRICKS.md §3.3).
+# Loaded by whirlwind.rollout.rollout_sglang_agent (AgentRolloutConfig); see
+# docs/agentic_multiturn.md. Used by the OS tool-use task
+# (configs/training/agentic_os_tools.yaml): conversations + tool schemas are
+# rendered by the model's chat template and tool calls are parsed server-side.
+node_id: "rollout-engine"
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 1
+dp_size: 1
+# Tool docs + two example exchanges + the episode so far fit easily; a turn is
+# one tool call or one short answer (keep model.max_completion_length equal).
+context_length: 8192
+max_gen_len: 512
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+generation_kwargs: {}
+mem_fraction_static: 0.4    # the updater needs the rest while the engine sleeps
+chunked_prefill_size: 2048
+schedule_policy: "lpm"
+enable_memory_saver: true
+enable_weights_cpu_backup: true
+disable_cuda_graph: true
+enable_lora: true
+lora_max_rank: 16
+lora_target_modules: ["q_proj", "v_proj"]
+# --- agentic knobs ---
+# apply_chat_template: null        # auto-detect; false forces raw prompts
+# chat_template_kwargs: {enable_thinking: false}
+tool_call_parser: "qwen25"         # hermes-style <tool_call>{json}</tool_call> (Qwen chat templates)
+disable_radix_cache: false         # multi-turn prompts share long prefixes
+n_rpc_workers: 128                 # one request per live episode: serve them concurrently

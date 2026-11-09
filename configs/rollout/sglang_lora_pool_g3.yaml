@@ -1,0 +1,23 @@
+# SGLang rollout backend 1 — single-GPU engine for the 2-engine LoRA pool.
+# Identical to backend 0 except node_id (rollout1) and GPU (3 via bringup).
+node_id: "rollout1"
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 1
+dp_size: 1
+context_length: 4096
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+generation_kwargs: {}
+mem_fraction_static: 0.2
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+enable_memory_saver: true
+disable_cuda_graph: true
+enable_weights_cpu_backup: true
+enable_lora: true
+lora_max_rank: 16
+lora_target_modules: ["q_proj", "v_proj"]

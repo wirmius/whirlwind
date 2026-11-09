@@ -1,0 +1,14 @@
+# Test rollout config — Qwen3-0.6B
+model_path: "Qwen/Qwen3-0.6B"
+load_format: "auto"
+tp_size: 1
+context_length: 2048
+max_gen_len: 128
+temperature: 1.0
+top_p: 1.0
+top_k: -1
+repetition_penalty: 1.0
+mem_fraction_static: 0.7
+chunked_prefill_size: 64
+schedule_policy: "lpm"
+node_id: "rollout"

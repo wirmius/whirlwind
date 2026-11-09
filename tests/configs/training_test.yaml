@@ -1,0 +1,12 @@
+# Test training config
+rollout_yaml: "rollout_qwen3_0_6b.yaml"
+reward_yaml: "reward_test.yaml"
+model_yaml: "model_qwen3_0_6b.yaml"
+
+total_steps: 3
+rollout_per_prompt: 2
+log_every_n_steps: 1
+memory_management_enabled: false
+
+seed: 42
+orchestrator_node_id: "orchestrator"

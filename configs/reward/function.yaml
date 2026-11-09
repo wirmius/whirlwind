@@ -1,0 +1,7 @@
+# Reward config
+reward_type: "accuracy"
+accuracy_regex: "#####?\\s*(\\d[\\d,]*)"
+group_size: 16
+scale_rewards: "group"
+node_id: "reward"
+mask_truncated_completions: false # match TRL default (False) — keep truncated completions in the loss

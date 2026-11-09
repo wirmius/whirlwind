@@ -1,0 +1,35 @@
+# EXPERIMENTAL — async proxy-rollout (actor-learner) GRPO on GSM8K.
+# Launch with examples/experimental_async_proxy.sh; see docs/async_proxy_rollout.md.
+#
+# The training batch comes from the rollout proxy's replay buffer, not from the
+# dataloader: the simulated external agent (whirlwind.training.sim_external_agent)
+# serves 64 prompts x 4 = 256 completions per generate_external call and reports
+# rewards out of band. min/max_train_batch = 256 makes one served batch one
+# optimizer step, the same cadence as the synchronous LoRA recipe. The
+# dataloader and reward nodes are used for validation (and the agent fetches its
+# training prompts from the dataloader).
+rollout_yaml: "$WHIRLWIND_ROLLOUT_CONFIG:../rollout/async_proxy_engine.yaml"
+reward_yaml: "$WHIRLWIND_REWARD_CONFIG:../reward/function.yaml"
+model_yaml: "$WHIRLWIND_MODEL_CONFIG:../model/fsdp2_async_lora_1gpu.yaml"
+
+workdir: runs/async_proxy_gsm8k
+hot_checkpoint_every_n_steps: 0
+cold_checkpoint_steps: []
+rollout_log_table_every_n_steps: -1
+reward_log_table_every_n_steps: -1
+validation_every_n_steps: 64
+validation_at_step_0: true
+total_steps: "$WW_ASYNC_TOTAL_STEPS:65"   # STEPS in the example script
+rollout_per_prompt: 4        # the agent's group size (one GRPO group per prompt)
+log_every_n_steps: 1
+memory_management_enabled: false  # non-colocate by construction
+seed: 42
+orchestrator_node_id: "orchestrator"
+
+# --- async knobs ---
+min_train_batch: 256          # one served batch (64 prompts x 4) = one optimizer step
+max_train_batch: 256
+max_weight_version_lag: 3     # K: entries older than K policy versions are discarded
+adapter_sync_every_k_steps: 1 # push the LoRA adapter to the engine after every step
+pop_poll_interval_s: 2.0
+step_timeout_s: 120.0

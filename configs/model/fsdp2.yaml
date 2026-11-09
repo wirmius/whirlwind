@@ -1,0 +1,59 @@
+# Model update config — FSDP2 + optimizer settings
+model_path: "Qwen/Qwen3-0.6B"
+torch_dtype: "float32"  # fp32 optimizer master + bf16 compute under FSDP2 mixed precision; a bf16 master freezes GRPO updates (TIPS_AND_TRICKS.md §1.1)
+model_init_kwargs:
+  trust_remote_code: false
+
+# FSDP2
+fsdp_size: 8
+fsdp_wrap_granularity: "layer"
+fsdp_cpu_offload: false
+fsdp_reshard_after_forward: true
+fsdp_activation_checkpointing: true
+fsdp_mixed_precision: true
+fsdp_sharding_strategy: "FULL_SHARD"
+
+# Optimizations
+disable_dropout: true
+torch_compile: false
+torch_compile_backend: "inductor"
+torch_compile_mode: "default"
+
+# Checkpointing
+checkpoint_dir: "/dev/shm/checkpoints"
+
+# GRPO loss
+kl_coef: 0.0
+clip_range_low: 0.2
+clip_range_high: 0.2
+temperature: 0.7 # MUST match the rollout sampling temperature + SGLang's returned logprobs. TRL divides logits by the sampling temperature (grpo_trainer.py:1111) so per_token_logps, the IS ratio (old vs sampling), and the generation-engine logprobs are all at the same temperature. A mismatch (e.g. 1.0 here vs 0.7 sampling) makes the IS ratio underflow to 0 → loss zeroed → no gradient → model never learns (flat entropy).
+loss_reduction: "dr_grpo"
+importance_sampling_level: "token" # token | sequence | none
+# Engine↔trainer IS correction (mirrors TRL vllm_importance_sampling_*).
+# Computes a fresh detached forward for coef_1 (→≈1.0) and a bounded IS
+# ratio from the SGLang generation logprobs to correct the engine/trainer
+# distribution mismatch. See ModelConfig.engine_is_* for details.
+engine_is_correction: true # Engine↔trainer IS correction (mirrors TRL vllm_importance_sampling_correction). Corrects the distribution mismatch between SGLang sampling and FSDP forward pass.
+engine_is_mode: "sequence_mask" # sequence_mask | sequence_truncate | token_mask | token_truncate
+engine_is_cap: 3.0
+max_completion_length: 1024 # dr_grpo denominator cap; must match rollout max_gen_len
+
+# Optimizer
+learning_rate: 1.0e-6
+weight_decay: 0.0
+max_grad_norm: 1000.0
+optim: "adamw"
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+
+# Scheduler
+lr_scheduler_type: "cosine"
+warmup_ratio: 0.05
+warmup_steps: 0
+
+# Training batch
+gradient_accumulation_steps: 1
+micro_batch_size: 1
+
+node_id: "model"

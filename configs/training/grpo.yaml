@@ -1,0 +1,27 @@
+# Training orchestrator config
+# Sub-config YAML paths (each node loads its own)
+# These use env vars set by bringup_and_run.sh ($WHIRLWIND_*), with fallbacks to relative paths.
+rollout_yaml: "$WHIRLWIND_ROLLOUT_CONFIG:../rollout/sglang.yaml"
+reward_yaml: "$WHIRLWIND_REWARD_CONFIG:../reward/function.yaml"
+model_yaml: "$WHIRLWIND_MODEL_CONFIG:../model/fsdp2.yaml"
+
+workdir: runs/grpo  # checkpoints + run artifacts
+hot_checkpoint_every_n_steps: 32
+cold_checkpoint_steps: 512
+
+# Table logging (orchestrator-controlled; moved from rollout/reward configs)
+rollout_log_table_every_n_steps: -1
+reward_log_table_every_n_steps: 4
+
+# Validation
+validation_every_n_steps: 64
+validation_at_step_0: true
+
+# Loop control
+total_steps: 1000
+rollout_per_prompt: 4
+log_every_n_steps: 1
+memory_management_enabled: false # controls whether the GPU memory preservation measures are taken at bringup and throughout the cycle.
+
+seed: 42
+orchestrator_node_id: "orchestrator"

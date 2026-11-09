@@ -1,0 +1,35 @@
+# Test model config — Qwen3-0.6B
+model_path: "Qwen/Qwen3-0.6B"
+torch_dtype: "bfloat16"
+
+# FSDP2 (single GPU for tests)
+fsdp_size: 1
+fsdp_wrap_granularity: "layer"
+fsdp_cpu_offload: false
+fsdp_reshard_after_forward: true
+fsdp_activation_checkpointing: false
+fsdp_mixed_precision: true
+fsdp_sharding_strategy: "FULL_SHARD"
+
+# Checkpointing
+checkpoint_dir: "/tmp/whirlwind-test-checkpoints"
+
+# Optimizer
+learning_rate: 1.0e-5
+weight_decay: 0.01
+max_grad_norm: 1.0
+optim: "adamw"
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+
+# Scheduler
+lr_scheduler_type: "cosine"
+warmup_ratio: 0.05
+warmup_steps: 0
+
+# Training batch
+gradient_accumulation_steps: 1
+micro_batch_size: 1
+
+node_id: "model"

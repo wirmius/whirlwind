@@ -1,0 +1,45 @@
+# EXPERIMENTAL — agentic (multi-turn) GRPO on procedurally generated OS tool-use
+# tasks, engine and updater sharing ONE GPU: the loop drains and sleeps the
+# engine for each optimizer step and wakes it before the adapter sync. Launch
+# with examples/experimental_agentic.sh and ENGINE_GPU == MODEL_GPU; see
+# docs/agentic_multiturn.md. Otherwise identical to agentic_os_tools.yaml.
+#
+# whirlwind.training.sim_os_agent plays the external agent: a pool of 128
+# generated tasks ("which directory holds X?", "what time is it?", "what code
+# is in file Y?"), each with its own in-memory file tree and clock, 8 episodes
+# per task, up to 4 turns each, tools list_dir / find_file / read_file /
+# get_time. The agentic loop regroups the served turns into episodes,
+# z-scores episode returns within each task's group and trains every turn with
+# its episode's advantage. There is no dataloader validation: the agent
+# evaluates held-out tasks itself (os_eval/* metrics).
+rollout_yaml: "$WHIRLWIND_ROLLOUT_CONFIG:../rollout/agentic_engine_tools_shared.yaml"
+reward_yaml: "$WHIRLWIND_REWARD_CONFIG:../reward/function.yaml"
+model_yaml: "$WHIRLWIND_MODEL_CONFIG:../model/fsdp2_agentic_tools_lora_1gpu.yaml"
+
+workdir: runs/agentic_os_tools_shared
+hot_checkpoint_every_n_steps: 0
+cold_checkpoint_steps: []
+rollout_log_table_every_n_steps: -1
+reward_log_table_every_n_steps: -1
+validation_every_n_steps: 0       # the agent runs its own held-out evaluation
+validation_at_step_0: false
+total_steps: "$WW_ASYNC_TOTAL_STEPS:100"   # STEPS in the example script
+rollout_per_prompt: 8        # the agent's group size (episodes per task)
+log_every_n_steps: 1
+memory_management_enabled: false
+seed: 42
+orchestrator_node_id: "orchestrator"
+
+# --- async knobs (batch sizes count turns, not episodes) ---
+min_train_batch: 256
+max_train_batch: 384
+max_weight_version_lag: 8
+adapter_sync_every_k_steps: 1
+pop_poll_interval_s: 2.0
+step_timeout_s: 300.0
+
+# --- agentic knobs ---
+group_episodes: true
+group_complete_timeout_s: 900.0
+engine_sleep_during_update: true   # shared GPU: drain + sleep around each step
+pause_drain_timeout_s: 300.0

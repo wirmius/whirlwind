@@ -1,0 +1,26 @@
+# Training orchestrator config — the validated mainline recipe:
+# Qwen3-0.6B-Base on GSM8K, manual FSDP2 + chunked lm_head + dr_grpo, the
+# SGLang engine and the model colocated on the same GPUs via sleep/wake.
+# Launch with examples/gsm8k_dr_grpo_colocate.sh, which picks the rollout and
+# model configs for one or two GPUs. On two GPUs it reached val reward
+# 0.6152 at step 128 (200-step run).
+# That number predates the per-rank denominator fix (see CHANGELOG):
+# logged loss and grad_norm are now 2x larger at world_size 2. The update
+# itself is ~unchanged (AdamW; clipping is off at max_grad_norm 1000).
+rollout_yaml: "$WHIRLWIND_ROLLOUT_CONFIG:../rollout/sglang_colocate_tp2.yaml"
+reward_yaml: "$WHIRLWIND_REWARD_CONFIG:../reward/function.yaml"
+model_yaml: "$WHIRLWIND_MODEL_CONFIG:../model/fsdp2_base_colocate_gas1_fp32master_chunked_dr_grpo.yaml"
+
+workdir: runs/gsm8k_dr_grpo_colocate
+hot_checkpoint_every_n_steps: 0
+cold_checkpoint_steps: []
+rollout_log_table_every_n_steps: -1
+reward_log_table_every_n_steps: -1
+validation_every_n_steps: 64
+validation_at_step_0: true
+total_steps: 200
+rollout_per_prompt: 4
+log_every_n_steps: 1
+memory_management_enabled: true
+seed: 42
+orchestrator_node_id: "orchestrator"

@@ -1,0 +1,26 @@
+# Rollout config — SGLang COLOCATE, SINGLE GPU (tp1/dp1), full-FT — 80 GB GPU — LONG-CONTEXT 8196.
+# Twin of sglang_colocate_g1.yaml (the single-GPU colocate config,
+# 8196 variant: ctx 8196, max_gen 7680, mem 0.45, allow_auto_truncate (prompt+gen fits window).
+# (sampling T0.7/p0.9/top_k -1, ctx 4096, max_gen 1024 — only KV-cache
+# capacity/scheduling changes), but leaves headroom on an 80 GB GPU for
+# the colocated FSDP2 world1 trainer (~30-36GB) + probe scoring peak.
+# Measured single-GPU peak with a 0.4 engine fraction: ~69 GB.
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 1
+dp_size: 1
+context_length: 8196
+max_gen_len: 7680
+allow_auto_truncate: true   # per-request gen trim: prompt+gen must fit the 8196 window
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+generation_kwargs: {}
+mem_fraction_static: 0.45
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+enable_memory_saver: true
+disable_cuda_graph: true
+enable_weights_cpu_backup: true
+node_id: "rollout"

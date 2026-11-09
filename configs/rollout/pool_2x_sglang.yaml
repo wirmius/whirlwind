@@ -1,0 +1,6 @@
+# SGLang rollout pool — 2-engine config (the router node).
+# Registers as "rollout" (the orchestrator's single endpoint) and fans out to
+# rollout0 + rollout1 (two single-GPU SGLang engines, configured separately).
+# See docs/rollout_pool_design.md.
+node_id: "rollout"
+backends: ["rollout0", "rollout1"]

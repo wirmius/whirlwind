@@ -1,0 +1,33 @@
+# EXPERIMENTAL — SGLang engine behind the agent proxy (agentic mode).
+# Loaded by whirlwind.rollout.rollout_sglang_agent (AgentRolloutConfig); see
+# docs/agentic_multiturn.md. Same engine as async_proxy_engine.yaml plus the
+# agent-only knobs below.
+node_id: "rollout-engine"
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 1
+dp_size: 1
+# Multi-turn prompts grow with every turn (few-shot system prompt + the
+# problem + earlier attempts), so the context is larger than single-turn's.
+context_length: 8192
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+generation_kwargs: {}
+mem_fraction_static: 0.85   # alone on its GPU
+chunked_prefill_size: 2048
+schedule_policy: "lpm"
+enable_memory_saver: false  # set true only with engine_sleep_during_update (shared GPU)
+enable_weights_cpu_backup: false
+disable_cuda_graph: false
+enable_lora: true
+lora_max_rank: 16
+lora_target_modules: ["q_proj", "v_proj"]
+# --- agentic knobs ---
+# apply_chat_template: null        # auto-detect; false forces raw prompts
+# chat_template_kwargs: {enable_thinking: false}
+# tool_call_parser: "qwen25"       # for conversations + tools traffic
+disable_radix_cache: false         # multi-turn prompts share long prefixes
+n_rpc_workers: 64                  # one request per (episode, turn): serve them concurrently

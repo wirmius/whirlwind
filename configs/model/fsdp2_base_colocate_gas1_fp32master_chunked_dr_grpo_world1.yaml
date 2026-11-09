@@ -1,0 +1,68 @@
+# Single-GPU (world1) twin of fsdp2_base_colocate_gas1_fp32master_chunked_dr_grpo.yaml:
+# identical except fsdp_size 1 (IS ON, chunked lm_head) — for single-GPU
+# colocate runs; keeps the same comparison class.
+# Model update config — FSDP2 + optimizer (GAS=1, COLOCATE, FP32 master, microbatch)
+# 2-GPU colocate run matching TRL: GAS=1, batch_size=64 × rollout_per_prompt 4 = 256
+# completions/opt-step. micro_batch_size=8 → 16 microbatch forwards/GPU (matches TRL
+# pdb=8×GAS=16=16 per GPU). FP32 master + bf16 compute (the BF16-master fix).
+# Colocate: memory_management_enabled=true → sleep/wake cycle (sync with rollout
+# enable_memory_saver=true).
+model_path: "Qwen/Qwen3-0.6B-Base"
+torch_dtype: "float32"  # FP32 MASTER + bf16 compute (FSDP2 mixed-precision). Matches
+                       # TRL's bf16=True (FP32 master, bf16 forward).
+model_init_kwargs:
+  trust_remote_code: false
+
+# FSDP2
+fsdp_size: 1
+fsdp_wrap_granularity: "layer"
+fsdp_cpu_offload: false
+fsdp_reshard_after_forward: true
+fsdp_activation_checkpointing: true
+fsdp_mixed_precision: true
+fsdp_sharding_strategy: "FULL_SHARD"
+
+# Optimizations
+disable_dropout: true
+torch_compile: false
+torch_compile_backend: "inductor"
+torch_compile_mode: "default"
+
+# Checkpointing (dir defaults to /dev/shm/checkpoints, auto-namespaced to
+# /dev/shm/checkpoints-${WW_RUN_ID} when WW_RUN_ID is set for multi-run
+# coexistence; see config.py _checkpoint_dir_default).
+
+# GRPO loss
+kl_coef: 0.0
+clip_range_low: 0.2
+clip_range_high: 0.2
+temperature: 0.7
+loss_reduction: "dr_grpo"
+importance_sampling_level: "token"
+engine_is_correction: true
+engine_is_mode: "sequence_mask"
+engine_is_cap: 3.0
+max_completion_length: 1024
+
+# Optimizer
+learning_rate: 1.0e-6
+weight_decay: 0.0
+max_grad_norm: 1000.0
+optim: "adamw"
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+
+# Scheduler
+lr_scheduler_type: "cosine"
+warmup_ratio: 0.05
+warmup_steps: 0
+
+# Training batch — GAS=1 (each orchestrator step = 1 opt-step, fresh generation
+# every step = TRL num_iterations=1). micro_batch_size=8 for throughput.
+# 64 prompts × 4 = 256 completions/opt-step = TRL pdb8×2gpu×GAS16=256.
+gradient_accumulation_steps: 1
+micro_batch_size: 8
+logits_chunk_size: 128  # chunked lm_head forward (peak logits [B,128,V])
+
+node_id: "model"

@@ -1,0 +1,24 @@
+# Rollout config — vLLM COLOCATE, tp_size=2, sleep/wake enabled.
+# 2-GPU colocate: vLLM (tp_size=2) shares both GPUs with the FSDP2 trainer
+# (world size 2) through sleep/wake (training config
+# memory_management_enabled: true).
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 2
+dp_size: 1
+context_length: 4096
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+
+generation_kwargs: {}
+
+mem_fraction_static: 0.2  # COLOCATE: low to leave headroom for FSDP2 FP32 master
+                    # the FSDP2 model's forward/backward + FP32 master during sleep/wake
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+enable_memory_saver: true  # COLOCATE: vLLM sleep(level=1)/wake_up
+enable_weights_cpu_backup: false
+node_id: "rollout"

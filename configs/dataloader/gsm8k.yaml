@@ -1,0 +1,32 @@
+# Dataloader config — GSM8K with 4-shot prompts.
+# 64 prompts × rollout_per_prompt 4 = 256 completions per optimizer step
+# (gradient_accumulation_steps 1, a fresh generation every step).
+# Validation: 256 test prompts × 4 = 1024 completions.
+node_id: "dataloader"
+default_dataset: "train"
+few_shot_count: 4
+system_prompt_template: |
+  Solve the following math problems. Always end your answer with "#### {{answer}}" where {{answer}} is the final numerical result.
+
+  {few_shot_examples}
+datasets:
+  train:
+    name: "openai/gsm8k"
+    dataset_config: "main"
+    split: "train"
+    prompt_key: "question"
+    response_key: "answer"
+    batch_size: 64
+    max_samples: 4096
+    seed: 42
+    shuffle: true
+  val:
+    name: "openai/gsm8k"
+    dataset_config: "main"
+    split: "test"
+    prompt_key: "question"
+    response_key: "answer"
+    batch_size: 256
+    max_samples: 256
+    seed: 42
+    shuffle: false

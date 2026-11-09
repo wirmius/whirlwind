@@ -1,0 +1,26 @@
+# Rollout config — SGLang COLOCATE, tp_size=2, native LoRA adapter reload.
+# Twin of sglang_colocate_tp2.yaml + enable_lora. SGLang uses torch_memory_saver
+# (pool-level tms_pause/tms_resume) — unlike vLLM's cumem (allocation-iteration),
+# it does NOT crash on LoRA memory during sleep/wake (vllm #39934/#48297).
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 2
+dp_size: 1
+context_length: 4096
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+generation_kwargs: {}
+mem_fraction_static: 0.2
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+enable_memory_saver: true
+disable_cuda_graph: true
+enable_weights_cpu_backup: true
+# --- LoRA (native adapter reload) ---
+enable_lora: true
+lora_max_rank: 16
+lora_target_modules: ["q_proj", "v_proj"]
+node_id: "rollout"

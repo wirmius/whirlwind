@@ -1,0 +1,7 @@
+# Test reward config
+reward_type: "length"
+length_scale: 1.0
+length_min: 1
+group_size: 4
+scale_rewards: "group"
+node_id: "reward"

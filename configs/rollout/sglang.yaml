@@ -1,0 +1,29 @@
+# Rollout config — SGLang engine settings
+model_path: "Qwen/Qwen3-0.6B"
+load_format: "auto"
+tp_size: 1
+# Engine replicas. The engine needs tp_size × dp_size GPUs in --rollout-gpus;
+# e.g. dp_size: 2 with --rollout-gpus 0,1.
+dp_size: 1
+context_length: 4096
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+
+# Extra generation params (forwarded to SGLang SamplingParams)
+generation_kwargs: {}
+
+mem_fraction_static: 0.5
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+# torch_memory_saver flags: only needed when the training config sets
+# ``memory_management_enabled: true`` (co-located sleep/wake). With it off
+# (the default), enabling these allocates the KV pool under a custom CUDA
+# MemPool that is never paused/resumed — a state SGLang's weight-update path
+# can leave inaccessible to Triton (sglang#10025). Keep in sync with the
+# training config.
+enable_memory_saver: false
+enable_weights_cpu_backup: false
+node_id: "rollout"

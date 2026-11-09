@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "whirlwind"
+version = "0.6.0"
+description = "A human-in-control, extensible and debuggable post-training package for experimenting with novel algorithms"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+dependencies = [
+  "torch>=2.11",
+  "transformers>=5.8",
+  "accelerate",
+  "datasets",
+  "numpy",
+  "pyzmq>=26",
+  "msgpack",
+  "pyyaml",
+  "wandb",
+]
+
+[project.optional-dependencies]
+sglang = ["sglang>=0.5.14"]
+vllm = ["vllm"]
+lora = ["peft"]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools.packages.find]
+include = ["whirlwind*"]
+
+[tool.pytest.ini_options]
+# Whirlwind test suite. unittest-style tests (also pytest-discoverable).
+# The model_update GPU tests need a working torch+CUDA+transformers env.
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# asyncio tests use a custom _async_test decorator (not pytest-asyncio), so
+# run them as plain unittest-style functions.
+filterwarnings = ["ignore::DeprecationWarning", "ignore::UserWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+  "wandb",    # run artifacts
+  "runs",
+]
+
+[tool.ruff.lint]
+# Match the repo's existing style (no E501 enforcement, keep imports tidy).
+select = ["E", "F", "I", "W"]
+ignore = [
+  "E501", # line length (handled by formatter; repo has long lines)
+  "E402", # module-level import not at top (lazy imports inside methods are intentional)
+  "F401", # unused import (noqa markers used in places)
+  "F841", # unused local (sometimes intentional for clarity)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F841", "E402", "F401"]
+"tests/_helpers.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["whirlwind", "tests"]

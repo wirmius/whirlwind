@@ -1,0 +1,58 @@
+# Model update config — FSDP2 + LoRA (COLOCATE, native adapter reload).
+# Based on the proven manual-fix config (val 0.63 full-FT). Adds peft_lora:
+# get_peft_model before fully_shard, optimizer trains adapter only, _export_weights
+# writes adapter-only (~9MB) which the rollout loads natively via add_lora.
+# See docs/lora_design.md.
+#
+# LR: LoRA needs a higher LR than full-FT (1e-6 -> 1e-4); max_grad_norm back to
+# 1.0 (standard for LoRA; full-FT used 1000 = effectively no clip). Everything
+# else identical to the working full-FT config (GAS=16, IS ON, dr_grpo, colocate,
+# optim-only sleep/wake).
+model_path: "Qwen/Qwen3-0.6B-Base"
+torch_dtype: "float32"  # FP32 master + bf16 compute (FSDP2 mixed-precision)
+model_init_kwargs:
+  trust_remote_code: false
+fsdp_size: 2
+fsdp_wrap_granularity: "layer"
+fsdp_cpu_offload: false
+fsdp_reshard_after_forward: true
+fsdp_activation_checkpointing: true
+fsdp_mixed_precision: true
+fsdp_sharding_strategy: "FULL_SHARD"
+fsdp_grad_reduce_dtype: "bfloat16"
+fsdp_root_reshard_after_forward: true
+# Sleep/wake FIX (optim-only offload — params stay on GPU, alias preserved).
+disable_dropout: true
+torch_compile: false
+# --- PEFT / LoRA ---
+peft_lora: true
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.0
+lora_target_modules: ["q_proj", "v_proj"]
+lora_bias: "none"
+# --- GRPO loss (identical to full-FT config) ---
+kl_coef: 0.0
+clip_range_low: 0.2
+clip_range_high: 0.2
+temperature: 0.7
+loss_reduction: "dr_grpo"
+importance_sampling_level: "token"
+engine_is_correction: true
+engine_is_mode: "sequence_mask"
+engine_is_cap: 3.0
+max_completion_length: 1024
+# --- Optimizer (LoRA-tuned LR + standard clip) ---
+learning_rate: 1.0e-4
+weight_decay: 0.0
+max_grad_norm: 1.0
+optim: "adamw"
+adam_beta1: 0.9
+adam_beta2: 0.999
+adam_epsilon: 1.0e-8
+lr_scheduler_type: "cosine"
+warmup_ratio: 0.05
+warmup_steps: 0
+gradient_accumulation_steps: 16
+micro_batch_size: -1
+node_id: "model"

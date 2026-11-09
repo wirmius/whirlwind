@@ -1,0 +1,10 @@
+# Progress tracker config — W&B experiment tracking
+backend: "wandb"
+
+# W&B settings
+wandb_project: "whirlwind"
+wandb_entity: "" # empty = personal account
+wandb_run_name: "" # empty = auto-generated
+wandb_mode: "online" # "online" | "offline" | "disabled"
+
+node_id: "tracker"

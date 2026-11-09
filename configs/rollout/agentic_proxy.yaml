@@ -1,0 +1,17 @@
+# EXPERIMENTAL — rollout proxy for agent traffic (agentic mode).
+# Loaded by whirlwind.rollout.rollout_proxy_agent (AgentProxyConfig); fronts
+# the engine in agentic_engine.yaml. See docs/agentic_multiturn.md.
+node_id: "rollout"
+backend: "rollout-engine"
+# Replay buffer
+buffer_max_entries: 8192    # many episodes x several turns in flight
+reward_ttl_s: 600.0         # an episode's turns wait for its end; agents can
+                            # extend long episodes with the touch endpoint
+max_weight_version_lag: 8   # fallback K (the training loop sends its own)
+# Serving: agents keep one request per live episode in flight, so the serving
+# workers must cover the episode concurrency.
+n_rpc_workers: 128
+log_internal_generate: false
+# --- agentic knobs ---
+backend_wait_timeout_s: 600.0  # keep below WHIRLWIND_RPC_TIMEOUT
+n_control_workers: 2           # pop/report/touch/pause never queue behind generates

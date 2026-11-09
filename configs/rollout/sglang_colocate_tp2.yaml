@@ -1,0 +1,31 @@
+# Rollout config — SGLang COLOCATE, tp_size=2, sleep/wake enabled.
+# 2-GPU colocate: SGLang (tp_size=2) shares both GPUs with the FSDP2 trainer
+# (world size 2) through the sleep/wake cycle (training config
+# memory_management_enabled: true). SGLang's release/resume_memory_occupation
+# frees and reclaims weights + KV cache between generation and training; the
+# model's sleep moves its optimizer state to CPU (TIPS_AND_TRICKS.md §3.1).
+# The model sleeps before the rollout wakes (§3.4), avoiding a step-1 OOM.
+#
+# Do not patch SGLang's decode logprob path in place (an in-tree fp32
+# log_softmax patch broke CUDA-graph capture); use rl_on_policy_target for
+# clean logprobs instead (§4.5).
+model_path: "Qwen/Qwen3-0.6B-Base"
+load_format: "auto"
+tp_size: 2
+dp_size: 1
+context_length: 4096
+max_gen_len: 1024
+temperature: 0.7
+top_p: 0.9
+top_k: -1
+repetition_penalty: 1.0
+
+generation_kwargs: {}
+
+mem_fraction_static: 0.2
+chunked_prefill_size: 128
+schedule_policy: "lpm"
+enable_memory_saver: true   # TRUE colocate: SGLang sleep/wake (release/resume memory)
+disable_cuda_graph: true    # colocate: cuda-graph replay crashes (illegal memory in copy_done) when FSDP2 co-resides; eager mode is stable
+enable_weights_cpu_backup: true   # COLOCATE: back up weights to CPU on sleep/resume (else resume loses weights -> gibberish generation)
+node_id: "rollout"
